@@ -40,7 +40,7 @@ CREATE TABLE IF NOT EXISTS `tcu_account` (
     PRIMARY KEY (`username`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
-CREATE TABLE iF NOT EXISTS `user_tcu_account` (
+CREATE TABLE IF NOT EXISTS `user_tcu_account` (
     `user_id`      int          NOT NULL,
     `username`     varchar(255) NOT NULL,
     `password`     varchar(255) NOT NULL,
@@ -49,4 +49,22 @@ CREATE TABLE iF NOT EXISTS `user_tcu_account` (
     PRIMARY KEY (`user_id`),
     FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE,
     FOREIGN KEY (`username`) REFERENCES `tcu_account` (`username`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+CREATE TABLE IF NOT EXISTS `roles` (
+    `id`         int          NOT NULL AUTO_INCREMENT,
+    `name`       varchar(255) NOT NULL,
+    `created_at` datetime     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    `updated_at` datetime     NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+CREATE TABLE IF NOT EXISTS `user_role` (
+    `user_id`    int      NOT NULL,
+    `role_id`    int      NOT NULL,
+    `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    `updated_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    PRIMARY KEY (`user_id`, `role_id`),
+    FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE,
+    FOREIGN KEY (`role_id`) REFERENCES `roles` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
