@@ -25,7 +25,7 @@ flask_cors.CORS(app, origins=app.config['CORS_ORIGINS'], supports_credentials=Tr
 
 def chech_user_by_tcu_account(user_id, password):
     cursor = db.cursor(dictionary=True)
-    cursor.execute("SELECT id, name, email FROM users INNER JOIN user_tcu_account ON users.id = user_tcu_account.user_id WHERE user_tcu_account.username = %s AND user_tcu_account.password = %s AND users.removed_at IS NOT NULL", (user_id, password))
+    cursor.execute("SELECT id as user_id, name, email FROM users INNER JOIN user_tcu_account ON users.id = user_tcu_account.user_id WHERE user_tcu_account.username = %s AND user_tcu_account.password = %s AND users.removed_at IS NOT NULL", (user_id, password))
     return cursor.fetchone()
 
 @app.route('/login', methods=['GET', 'POST'])
@@ -77,7 +77,7 @@ def before_request():
 @app.route('/all_users', methods=['GET', 'POST'])
 def all_users():
     cursor = db.cursor(dictionary=True)
-    cursor.execute("SELECT id, name, email, birthday, grade, position, phone, address, twitter, facebook, instagram, linkedin, github, website, about FROM users LEFT JOIN user_profile ON users.id = user_profile.user_id")
+    cursor.execute("SELECT * FROM user_full_view")
     return flask.jsonify(cursor.fetchall())
 
 @app.route('/tcu-portal', methods=['GET', 'POST'])
