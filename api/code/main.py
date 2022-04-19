@@ -120,7 +120,7 @@ def set_tcu_account():
 
     cursor.execute("SELECT user_id FROM user_tcu_account WHERE username = %s AND user_id <> %s", (username, flask.session['user_id']))
     if cursor.fetchone():
-        return flask.jsonify({'success': False, 'message': '別のユーザによって既に登録されているTCUアカウントです。'})
+        return flask.jsonify({'success': False, 'message': 'このTCUアカウントは別のユーザによって既に登録されています。'})
 
     cursor.execute("SELECT hash_password FROM tcu_account WHERE username = %s", (username,))
     account = cursor.fetchone()
@@ -135,6 +135,22 @@ def set_tcu_account():
     cursor.execute("INSERT INTO user_tcu_account (user_id, username, password) VALUES (%s, %s, %s)", (flask.session['user_id'], username, password))
     db.commit()
 
+    return flask.jsonify({'success': True, 'data': {}})
+
+@app.route('/get-tcu-account', methods=['GET', 'POST'])
+def get_tcu_account():
+    cursor = db.cursor(dictionary=True)
+    cursor.execute("SELECT username, password FROM user_tcu_account WHERE user_id = %s", (flask.session['user_id'],))
+    account = cursor.fetchone()
+    if not account:
+        return flask.jsonify({'success': False, 'message': 'TCUアカウントが登録されていません。'})
+    return flask.jsonify({'success': True, 'data': {'username': account['username'], 'password': account['password']}})
+
+@app.route('/remove-tcu-account', methods=['GET', 'POST'])
+def remove_tcu_account():
+    cursor = db.cursor(dictionary=True)
+    cursor.execute("DELETE FROM user_tcu_account WHERE user_id = %s", (flask.session['user_id'],))
+    db.commit()
     return flask.jsonify({'success': True, 'data': {}})
 
 @app.route('/all-users', methods=['GET', 'POST'])
