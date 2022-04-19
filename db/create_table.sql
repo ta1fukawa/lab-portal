@@ -89,7 +89,6 @@ SELECT
     `user_profile`.`image`     AS `image`,
     `user_profile`.`about`     AS `about`,
     `user_tcu_account`.`username`   AS `username`,
-    -- `user_tcu_account`.`password`   AS `password`,
     `tcu_account`.`mail`       AS `mail`,
     `tcu_account`.`usergroup`  AS `usergroup`,
     `tcu_account`.`name_kanji` AS `name_kanji`,

@@ -24,7 +24,7 @@ class TcuPortal:
         # Access to TCU portal
         page = self.session.get('https://portal.off.tcu.ac.jp/OldIndex.aspx')
         if page.status_code != requests.codes.ok:
-            raise Exception('Access to TCU portal failed.')
+            raise Exception('TCUポータルサイトにアクセスできません。')
 
         # Login with TCU account
         data = self.get_asp_event(page, 'btnLogin')
@@ -34,7 +34,7 @@ class TcuPortal:
         })
         self.top_page = self.session.post('https://portal.off.tcu.ac.jp/OldIndex.aspx', data=data)
         if self.top_page.status_code != requests.codes.ok:
-            raise Exception('Login with TCU account failed.')
+            raise Exception('TCUポータルサイトへのログインに失敗しました。')
 
     def login_with_sso(self, id_, pw):
         # SSO header
@@ -45,7 +45,7 @@ class TcuPortal:
         # Access to TCU portal
         page = self.session.get('https://portal.off.tcu.ac.jp/')
         if page.status_code != requests.codes.ok:
-            raise Exception('Access to TCU portal failed.')
+            raise Exception('TCUポータルサイトにアクセスできません。')
 
         # Redirect to SSO page
         data = {
@@ -53,7 +53,7 @@ class TcuPortal:
         }
         page = self.session.post(page.url, data=data, headers=sso_headers)
         if page.status_code != requests.codes.ok:
-            raise Exception('Redirect to SSO page failed.')
+            raise Exception('TCUポータルサイトのSSOページのリダイレクトに失敗しました。')
 
         # Login with TCU account
         data = {
@@ -64,10 +64,10 @@ class TcuPortal:
         }
         page = self.session.post('https://sso.tcu.ac.jp/idp/Authn/External?conversation=e2s1', data=data, headers=sso_headers)
         if page.status_code != requests.codes.ok:
-            raise Exception('Login with TCU account failed.')
+            raise Exception('TCUポータルサイトにアクセスできません。')
 
         if 'ユーザー名またはパスワードが違います。' in page.text:
-            raise Exception('Login with TCU account failed.')
+            raise Exception('TCUポータルサイトへのログインに失敗しました。')
 
         # Redirect to TCU portal
         bs = BeautifulSoup(page.text, 'html.parser')
@@ -77,7 +77,7 @@ class TcuPortal:
         }
         self.top_page = self.session.post('https://portal.off.tcu.ac.jp/Shibboleth.sso/SAML2/POST', data=data)
         if self.top_page.status_code != requests.codes.ok:
-            raise Exception('Redirect to TCU portal failed.')
+            raise Exception('TCUポータルサイトのSSOページのリダイレクトに失敗しました。')
 
     def logout(self):
         # Logout
@@ -102,7 +102,7 @@ class TcuPortal:
             data = self.get_asp_event(self.top_page, 'ctl00$ctl00$MainContent$Contents$ExLinkButton2')
             self.message_page = self.session.post(self.top_page.url, data=data)
             if self.message_page.status_code != requests.codes.ok:
-                raise Exception('Access to message page failed.')
+                raise Exception('TCUポータルサイトのメッセージページにアクセスできません。')
         message_page = self.message_page
 
         messages = []
@@ -127,7 +127,7 @@ class TcuPortal:
                 data = self.get_asp_event(message_page, asp_target)
                 message_detail_page = self.session.post(message_page.url, data=data)
                 if message_detail_page.status_code != requests.codes.ok:
-                    raise Exception('Access to message detail page failed.')
+                    raise Exception('TCUポータルサイトのメッセージ詳細ページにアクセスできません。')
                 detail_bs = BeautifulSoup(message_detail_page.text, 'html.parser')
 
                 # Replace return code
@@ -183,7 +183,7 @@ class TcuPortal:
             data = self.get_asp_event(message_page, asp_target)
             message_page = self.session.post(message_page.url, data=data)
             if message_page.status_code != requests.codes.ok:
-                raise Exception('Access to message page failed.')
+                raise Exception('TCUポータルサイトのメッセージページにアクセスできません。')
 
     def get_oshirase_list(self, since=None, until=None):
         # Access to oshirase page
@@ -191,7 +191,7 @@ class TcuPortal:
             data = self.get_asp_event(self.top_page, 'ctl00$ctl00$MainContent$Contents$lnkBtnOsrList')
             self.oshirase_page = self.session.post(self.top_page.url, data=data)
             if self.oshirase_page.status_code != requests.codes.ok:
-                raise Exception('Access to oshirase page failed.')
+                raise Exception('TCUポータルサイトのお知らせページにアクセスできません。')
         oshirase_page = self.oshirase_page
 
         oshirases = []
@@ -216,7 +216,7 @@ class TcuPortal:
                 data = self.get_asp_event(oshirase_page, asp_target)
                 oshirase_detail_page = self.session.post(oshirase_page.url, data=data)
                 if oshirase_detail_page.status_code != requests.codes.ok:
-                    raise Exception('Access to oshirase detail page failed.')
+                    raise Exception('TCUポータルサイトのお知らせ詳細ページにアクセスできません。')
                 detail_bs = BeautifulSoup(oshirase_detail_page.text, 'html.parser')
 
                 # Replace return code
@@ -271,7 +271,7 @@ class TcuPortal:
             data = self.get_asp_event(oshirase_page, asp_target)
             oshirase_page = self.session.post(oshirase_page.url, data=data)
             if oshirase_page.status_code != requests.codes.ok:
-                raise Exception('Access to oshirase page failed.')
+                raise Exception('TCUポータルサイトのお知らせページにアクセスできません。')
     
     def get_daredemo_list(self, since=None, until=None):
         # Access to daredemo page
@@ -279,7 +279,7 @@ class TcuPortal:
             data = self.get_asp_event(self.top_page, 'ctl00$ctl00$MainContent$Contents$ExLinkButton4')
             self.daredemo_page = self.session.post(self.top_page.url, data=data)
             if self.daredemo_page.status_code != requests.codes.ok:
-                raise Exception('Access to daredemo page failed.')
+                raise Exception('TCUポータルサイトの誰でも投稿ページにアクセスできません。')
         daredemo_page = self.daredemo_page
 
         daredemos = []
@@ -304,7 +304,7 @@ class TcuPortal:
                 data = self.get_asp_event(daredemo_page, asp_target)
                 daredemo_detail_page = self.session.post(daredemo_page.url, data=data)
                 if daredemo_detail_page.status_code != requests.codes.ok:
-                    raise Exception('Access to daredemo detail page failed.')
+                    raise Exception('TCUポータルサイトの誰でも投稿詳細ページにアクセスできません。')
                 detail_bs = BeautifulSoup(daredemo_detail_page.text, 'html.parser')
 
                 # Replace return code
@@ -358,4 +358,4 @@ class TcuPortal:
             data = self.get_asp_event(daredemo_page, asp_target)
             daredemo_page = self.session.post(daredemo_page.url, data=data)
             if daredemo_page.status_code != requests.codes.ok:
-                raise Exception('Access to daredemo page failed.')
+                raise Exception('TCUポータルサイトの誰でも投稿ページにアクセスできません。')

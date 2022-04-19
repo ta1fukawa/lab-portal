@@ -1,10 +1,12 @@
-import flask
-import flask_cors
+import base64
 import datetime
+import hashlib
 import urllib.parse
-import mysql.connector
 
 import dateutil.relativedelta
+import flask
+import flask_cors
+import mysql.connector
 
 from tcu_portal import TcuPortal
 
@@ -23,58 +25,119 @@ app = flask.Flask(__name__)
 app.config.from_pyfile('flask_config.cfg')
 flask_cors.CORS(app, origins=app.config['CORS_ORIGINS'], supports_credentials=True)
 
+def get_request_data(request):
+    if request.method == 'GET':
+        request_data = urllib.parse.parse_qs(urllib.parse.urlparse(request.url).query, keep_blank_values=True)
+    elif request.method == 'POST':
+        if request.headers['Content-Type'] == 'application/json':
+            request_data = request.get_json()
+        else:
+            request_data = request.form
+    else:
+        request_data = {}
+    return request_data
+
 def chech_user_by_tcu_account(user_id, password):
     cursor = db.cursor(dictionary=True)
     cursor.execute("SELECT id as user_id, name, email FROM users INNER JOIN user_tcu_account ON users.id = user_tcu_account.user_id WHERE user_tcu_account.username = %s AND user_tcu_account.password = %s AND users.removed_at IS NULL", (user_id, password))
     return cursor.fetchone()
 
+def calc_password_hash(password, salt):
+    hs = '{SSHA}' + base64.b64encode(hashlib.sha1(password.encode('utf-8') + salt).digest() + salt).decode('utf-8')
+    return hs
+
 @app.route('/login', methods=['GET', 'POST'])
-@flask_cors.cross_origin(headers=['Content-Type', 'Authorization'], supports_credentials=True)
 def login():
-    if flask.request.method == 'GET':
-        request_data = urllib.parse.parse_qs(urllib.parse.urlparse(flask.request.url).query, keep_blank_values=True)
-    elif flask.request.method == 'POST':
-        if flask.request.headers['Content-Type'] == 'application/json':
-            request_data = flask.request.get_json()
-        else:
-            request_data = flask.request.form
+    request_data = get_request_data(flask.request)
 
     if 'username' not in request_data or 'password' not in request_data:
-        return flask.jsonify({'success': False, 'message': 'Missing username or password'})
+        return flask.jsonify({'success': False, 'message': 'ユーザ名とパスワードを指定してください。'})
 
     username = request_data['username'][0] if type(request_data['username']) == list else request_data['username']
     password = request_data['password'][0] if type(request_data['password']) == list else request_data['password']
     account = chech_user_by_tcu_account(username, password)
     if not account:
-        return flask.jsonify({'success': False, 'message': 'Invalid username or password'})
+        return flask.jsonify({'success': False, 'message': 'ユーザ名またはパスワードが間違っています。'})
     flask.session.permanent = True
     flask.session['user_id'] = account['user_id']
     return flask.jsonify({'success': True, 'data': {'username': username}})
+
+@app.route('/add-user', methods=['GET', 'POST'])
+def add_user():
+    request_data = get_request_data(flask.request)
+
+    if 'name' not in request_data or 'email' not in request_data:
+        return flask.jsonify({'success': False, 'message': '名前とメールアドレスを指定してください。'})
+    
+    name = request_data['name'][0] if type(request_data['name']) == list else request_data['name']
+    email = request_data['email'][0] if type(request_data['email']) == list else request_data['email']
+
+    cursor = db.cursor(dictionary=True)
+    cursor.execute("SELECT id FROM users WHERE email = %s", (email,))
+    if cursor.fetchone():
+        return flask.jsonify({'success': False, 'message': '既に登録されているメールアドレスです。'})
+    
+    cursor.execute("INSERT INTO users (name, email) VALUES (%s, %s)", (name, email))
+    db.commit()
+
+    cursor.execute("SELECT id FROM users WHERE email = %s AND removed_at IS NULL", (email,))
+    user_id = cursor.fetchone()['id']
+    
+    flask.session.permanent = True
+    flask.session['user_id'] = user_id
+    return flask.jsonify({'success': True, 'data': {}})
+
+@app.before_request
+def before_request():
+    if 'user_id' in flask.session:
+        cursor = db.cursor(dictionary=True)
+        cursor.execute("SELECT id FROM users WHERE id = %s AND removed_at IS NULL", (flask.session['user_id'],))
+        if not cursor.fetchone():
+            flask.session.clear()
+            return flask.redirect('/login')
+        return
+    elif flask.request.path in ['/login', '/add-user']:
+        return
+    else:
+        return flask.jsonify({'success': False, 'message': 'ログインしてください。'})
 
 @app.route('/logout', methods=['GET', 'POST'])
 def logout():
     flask.session.clear()
     return flask.jsonify({'success': True, 'data': {}})
 
-@app.route('/is_logged_in', methods=['GET', 'POST'])
-def is_logged_in():
-    if 'username' in flask.session and 'password' in flask.session:
-        username = flask.session['username']
-        password = flask.session['password']
-        if chech_user_by_tcu_account(username, password):
-            return flask.jsonify({'success': True, 'data': {'username': flask.session['username']}})
-    return flask.jsonify({'success': False, 'message': 'Not logged in'})
+@app.route('/set-tcu-account', methods=['GET', 'POST'])
+def set_tcu_account():
+    request_data = get_request_data(flask.request)
 
-@app.before_request
-def before_request():
-    if 'username' in flask.session:
-        return
-    elif flask.request.path in ['/login', '/is_logged_in']:
-        return
-    else:
-        return flask.jsonify({'success': False, 'message': 'Not logged in'})
+    if 'username' not in request_data or 'password' not in request_data:
+        return flask.jsonify({'success': False, 'message': 'ユーザ名とパスワードを指定してください。'})
 
-@app.route('/all_users', methods=['GET', 'POST'])
+    username = request_data['username'][0] if type(request_data['username']) == list else request_data['username']
+    password = request_data['password'][0] if type(request_data['password']) == list else request_data['password']
+
+    cursor = db.cursor(dictionary=True)
+
+    cursor.execute("SELECT user_id FROM user_tcu_account WHERE username = %s AND user_id <> %s", (username, flask.session['user_id']))
+    if cursor.fetchone():
+        return flask.jsonify({'success': False, 'message': '別のユーザによって既に登録されているTCUアカウントです。'})
+
+    cursor.execute("SELECT hash_password FROM tcu_account WHERE username = %s", (username,))
+    account = cursor.fetchone()
+    if not account:
+        return flask.jsonify({'success': False, 'message': 'TCUアカウントが見つかりません。'})
+
+    salt = base64.b64decode(account['hash_password'][6:])[-6:]
+    if calc_password_hash(password, salt) != account['hash_password']:
+        return flask.jsonify({'success': False, 'message': 'TCUアカウントまたはパスワードが間違っています。'})
+
+    cursor.execute("DELETE FROM user_tcu_account WHERE user_id = %s", (flask.session['user_id'],))
+    cursor.execute("INSERT INTO user_tcu_account (user_id, username, password) VALUES (%s, %s, %s)", (flask.session['user_id'], username, password))
+    db.commit()
+
+    return flask.jsonify({'success': True, 'data': {}})
+
+@app.route('/all-users', methods=['GET', 'POST'])
 def all_users():
     cursor = db.cursor(dictionary=True)
     cursor.execute("SELECT * FROM user_full_view")
@@ -82,18 +145,7 @@ def all_users():
 
 @app.route('/tcu-portal', methods=['GET', 'POST'])
 def tcu_portal():
-    if flask.request.method == 'GET':
-        request_data = urllib.parse.parse_qs(urllib.parse.urlparse(flask.request.url).query, keep_blank_values=True)
-    elif flask.request.method == 'POST':
-        if flask.request.headers['Content-Type'] == 'application/json':
-            request_data = flask.request.get_json()
-        else:
-            request_data = flask.request.form
-    else:
-        return flask.jsonify({'success': False, 'error_message': 'ID or PW is not found'})
-
-    if 'id' not in request_data or 'pw' not in request_data:
-        return flask.jsonify({'success': False, 'error_message': 'ID or PW is not found'})
+    request_data = get_request_data(flask.request)
 
     if 'since' in request_data:
         since = datetime.strptime(request_data['since'][0], '%Y-%m-%d')
@@ -140,15 +192,17 @@ def lab_members():
         'Bachelor 1': '学士1年',
     }
 
-    members = {}
+    member_list = {}
     for grade, name in grade_table.items():
         cursor = db.cursor(dictionary=True)
         cursor.execute("SELECT * FROM user_full_view WHERE grade = %s", (grade,))
-        teachers = cursor.fetchall()
-        if teachers:
-            members[name] = teachers
+        members = cursor.fetchall()
+        if members:
+            for member in members:
+                del member['user_id']
+            member_list[name] = members
 
-    response = {'success': True, 'data': {'members': members}}
+    response = {'success': True, 'data': {'members': member_list}}
     return flask.jsonify(response)
 
 if __name__ == '__main__':
