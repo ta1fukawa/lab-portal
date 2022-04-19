@@ -25,7 +25,7 @@ flask_cors.CORS(app, origins=app.config['CORS_ORIGINS'], supports_credentials=Tr
 
 def chech_user_by_tcu_account(user_id, password):
     cursor = db.cursor(dictionary=True)
-    cursor.execute("SELECT id as user_id, name, email FROM users INNER JOIN user_tcu_account ON users.id = user_tcu_account.user_id WHERE user_tcu_account.username = %s AND user_tcu_account.password = %s AND users.removed_at IS NOT NULL", (user_id, password))
+    cursor.execute("SELECT id as user_id, name, email FROM users INNER JOIN user_tcu_account ON users.id = user_tcu_account.user_id WHERE user_tcu_account.username = %s AND user_tcu_account.password = %s AND users.removed_at IS NULL", (user_id, password))
     return cursor.fetchone()
 
 @app.route('/login', methods=['GET', 'POST'])
@@ -44,11 +44,11 @@ def login():
 
     username = request_data['username'][0] if type(request_data['username']) == list else request_data['username']
     password = request_data['password'][0] if type(request_data['password']) == list else request_data['password']
-    if not chech_user_by_tcu_account(username, password):
+    account = chech_user_by_tcu_account(username, password)
+    if not account:
         return flask.jsonify({'success': False, 'message': 'Invalid username or password'})
     flask.session.permanent = True
-    flask.session['username'] = username
-    flask.session['password'] = password
+    flask.session['user_id'] = account['user_id']
     return flask.jsonify({'success': True, 'data': {'username': username}})
 
 @app.route('/logout', methods=['GET', 'POST'])
@@ -127,30 +127,27 @@ def tcu_portal():
 
 @app.route('/lab-members', methods=['GET', 'POST'])
 def lab_members():
-    members = {
-        '教授': [
-            {
-                'name': '神野 健哉',
-                'name_en': 'Kenya Jinno',
-                'name_kana': 'ジンノ ケンヤ',
-                'position': '教授',
-                'image': 'kenya_jinno.jpg',
-                'mail': 'kjinno@tcu.ac.jp',
-                'twitter_id': '@kjinno',
-                'description': '我々のボスである。',
-            }
-        ],
-        'M2': [
-            {
-                'name': '山田 太郎',
-                'name_en': 'Taro Yamada',
-                'name_kana': 'ヤマダ タロウ',
-                'image': 'dummy.png',
-                'tel': '090-1234-5678',
-                'description': '我々の一員である。',
-            }
-        ],
+    grade_table = {
+        'Teacher': '教員',
+        'Doctor 5': '博士5年',
+        'Doctor 4': '博士4年',
+        'Doctor 3': '博士3年',
+        'Master 2': '修士2年',
+        'Master 1': '修士1年',
+        'Bachelor 4': '学士4年',
+        'Bachelor 3': '学士3年',
+        'Bachelor 2': '学士2年',
+        'Bachelor 1': '学士1年',
     }
+
+    members = {}
+    for grade, name in grade_table.items():
+        cursor = db.cursor(dictionary=True)
+        cursor.execute("SELECT * FROM user_full_view WHERE grade = %s", (grade,))
+        teachers = cursor.fetchall()
+        if teachers:
+            members[name] = teachers
+
     response = {'success': True, 'data': {'members': members}}
     return flask.jsonify(response)
 
