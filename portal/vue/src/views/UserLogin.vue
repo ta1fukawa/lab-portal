@@ -1,7 +1,7 @@
 <template>
     <div class="wrapper">
         <Header/>
-        <main class="p-3 p-md-4">
+        <main>
             <div class="login-area">
                 <h1 class="h3">ログイン画面</h1>
                 <p>

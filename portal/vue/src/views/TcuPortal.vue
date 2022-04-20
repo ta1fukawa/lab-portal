@@ -2,7 +2,7 @@
     <div class="wrapper">
         <Header/>
         <Sidemenu/>
-        <main class="p-3 p-md-4">
+        <main>
             <h1 class="h3">大学ポータル</h1>
 
             <div class="d-grid gap-2 d-md-flex justify-content-md-end">

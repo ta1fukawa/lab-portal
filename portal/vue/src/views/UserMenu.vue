@@ -2,11 +2,14 @@
     <div class="wrapper">
         <Header/>
         <Sidemenu/>
-        <main class="p-3 p-md-4">
+        <main>
             <h1 class="h3">ユーザメニュー</h1>
             <p>設定とかログアウトとか。</p>
 
             <h2 class="h4 mt-5">ログアウト</h2>
+            <p>
+                ログアウトボタンは用意していますが、他人のPCでログインしているとき以外にわざわざログアウトをする必要はないと思います。<br>
+            </p>
             <button class="btn btn-primary m-2" id="logout-button">ログアウト</button>
             
             <h2 class="h4 mt-5">TCUアカウントと連携</h2>

@@ -30,6 +30,8 @@ export default {
 
 body {
     font-size: .875rem;
+    position: fixed;
+    overflow: hidden;
 }
 
 .feather {
@@ -60,7 +62,7 @@ body {
     grid-row: 2 / 3;
     grid-column: 2 / 3;
     overflow-y: auto;
-    padding-bottom: 80px !important;
+    padding: 40px 20px 60px 20px;
 }
 
 @media (max-width: 768px) {
@@ -70,6 +72,10 @@ body {
 
     .wrapper > nav {
         visibility: hidden;
+    }
+
+    .wrapper > main {
+        padding: 20px 10px 120px 10px;
     }
 
     #navbar-toggler-checkbox:checked + .wrapper {

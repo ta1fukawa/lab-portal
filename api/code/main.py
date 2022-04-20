@@ -2,6 +2,8 @@ import base64
 import datetime
 import hashlib
 import urllib.parse
+import threading
+import time
 
 import dateutil.relativedelta
 import flask
@@ -12,14 +14,23 @@ from tcu_portal import TcuPortal
 
 with open('/run/secrets/db_root_passwd', 'r') as f:
     db_root_passwd = f.read().strip()
-    
+
 db = mysql.connector.connect(
     host="db",
     user="root",
     passwd=db_root_passwd,
     database="portal"
 )
-db.ping(reconnect=True)
+
+def db_ping():
+    try:
+        db.ping(reconnect=True)
+    except:
+        pass
+    finally:
+        threading.Timer(60, db_ping).start()
+
+threading.Thread(target=db_ping).start()
 
 app = flask.Flask(__name__)
 app.config.from_pyfile('flask_config.cfg')
