@@ -231,7 +231,7 @@ class TcuPortal:
                     'title'     : detail_bs.find(attrs={'id': 'MainContent_Contents_lblTitle'     }).get_text(),
                     'body'      : detail_bs.find(attrs={'id': 'MainContent_Contents_lblBody'      }).get_text()
                 }
-                oshirase['id'] = hashlib.md5('tcu_portal_oshirase::{date}_{registrant}_{title}::{user}'.format(**message, user=self.user).encode()).hexdigest()
+                oshirase['id'] = hashlib.md5('tcu_portal_oshirase::{date}_{registrant}_{title}::{user}'.format(**oshirase, user=self.user).encode()).hexdigest()
 
                 # Add file links
                 file_links = []

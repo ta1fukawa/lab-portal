@@ -203,7 +203,6 @@ def tcu_portal():
                 for message in message_list:
                     cursor.execute("SELECT id FROM tcu_portal_message WHERE id = %s", (message['id'],))
                     if not cursor.fetchone():
-                        print(message['date'])
                         cursor.execute("INSERT INTO tcu_portal_message (id, user_id, date, sender, title, is_important, body) VALUES (%s, %s, %s, %s, %s, %s, %s)", (message['id'], flask.session['user_id'], message['date'], message['sender'], message['title'], message['important'], message['body']))
                         db.commit()
             if 'oshirase' in types:
@@ -227,13 +226,13 @@ def tcu_portal():
     
     data = {}
     if 'message' in types:
-        cursor.execute("SELECT * FROM tcu_portal_message WHERE user_id = %s AND date >= %s AND date <= %s", (flask.session['user_id'], since, until))
+        cursor.execute("SELECT id, date, sender, title, is_important FROM tcu_portal_message WHERE user_id = %s AND date >= %s AND date <= %s", (flask.session['user_id'], since, until))
         data['message'] = cursor.fetchall()
     if 'oshirase' in types:
-        cursor.execute("SELECT * FROM tcu_portal_oshirase WHERE user_id = %s AND date >= %s AND date <= %s", (flask.session['user_id'], since, until))
+        cursor.execute("SELECT id, date, registrant, title, body FROM tcu_portal_oshirase WHERE user_id = %s AND date >= %s AND date <= %s", (flask.session['user_id'], since, until))
         data['oshirase'] = cursor.fetchall()
     if 'daredemo' in types:
-        cursor.execute("SELECT * FROM tcu_portal_daredemo WHERE user_id = %s AND date >= %s AND date <= %s", (flask.session['user_id'], since, until))
+        cursor.execute("SELECT id, date, registrant, title, body FROM tcu_portal_daredemo WHERE user_id = %s AND date >= %s AND date <= %s", (flask.session['user_id'], since, until))
         data['daredemo'] = cursor.fetchall()
 
     return flask.jsonify({'success': True, 'data': data})
