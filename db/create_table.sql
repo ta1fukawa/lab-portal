@@ -97,3 +97,43 @@ FROM `users`
     LEFT JOIN `user_profile` ON `users`.`id` = `user_profile`.`user_id`
     LEFT JOIN `user_tcu_account` ON `users`.`id` = `user_tcu_account`.`user_id`
     LEFT JOIN `tcu_account` ON `user_tcu_account`.`username` = `tcu_account`.`username`;
+
+CREATE TABLE IF NOT EXISTS `tcu_portal_message` (
+    `id`           int          NOT NULL,
+    `user_id`      int          NOT NULL,
+    `date`         datetime     NOT NULL,
+    `sender`       varchar(255) NOT NULL,
+    `title`        varchar(255) NOT NULL,
+    `is_important` tinyint(1)   NOT NULL DEFAULT 0,
+    `body`         text         NOT NULL,
+    `created_at`   datetime     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    `updated_at`   datetime     NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    PRIMARY KEY (`id`),
+    FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+CREATE TABLE IF NOT EXISTS `tcu_portal_oshirase` (
+    `id`           int          NOT NULL,
+    `user_id`      int          NOT NULL,
+    `date`         date         NOT NULL,
+    `registrant`   varchar(255) NOT NULL,
+    `title`        varchar(255) NOT NULL,
+    `body`         text         NOT NULL,
+    `created_at`   datetime     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    `updated_at`   datetime     NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    PRIMARY KEY (`id`),
+    FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+CREATE TABLE IF NOT EXISTS `tcu_portal_daredemo` (
+    `id`           int          NOT NULL,
+    `user_id`      int          NOT NULL,
+    `date`         date         NOT NULL,
+    `registrant`   varchar(255) NOT NULL,
+    `title`        varchar(255) NOT NULL,
+    `body`         text         NOT NULL,
+    `created_at`   datetime     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    `updated_at`   datetime     NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    PRIMARY KEY (`id`),
+    FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;

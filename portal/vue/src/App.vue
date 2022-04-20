@@ -75,7 +75,7 @@ body {
     }
 
     .wrapper > main {
-        padding: 20px 10px 120px 10px;
+        padding: 40px 10px 120px 10px;
     }
 
     #navbar-toggler-checkbox:checked + .wrapper {

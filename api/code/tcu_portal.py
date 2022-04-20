@@ -7,9 +7,10 @@ import hashlib
 import datetime
 
 class TcuPortal:
-    def __init__(self, id_, pw, sso=True):
+    def __init__(self, id_, pw, user='', sso=True):
         # Start session
         self.session = requests.session()
+        self.user = user
 
         if sso:
             self.login_with_sso(id_, pw)
@@ -142,7 +143,7 @@ class TcuPortal:
                     'important': detail_bs.find(attrs={'id': 'MainContent_Contents_lblImportance'}).get_text() == '重要',
                     'body'     : detail_bs.find(attrs={'id': 'MainContent_Contents_lblBody'      }).get_text()
                 }
-                message['id'] = hashlib.md5('tcu_portal_message::{date}_{sender}_{title}'.format(**message).encode()).hexdigest()
+                message['id'] = hashlib.md5('tcu_portal_message::{date}_{sender}_{title}::{user}'.format(**message, user=self.user).encode()).hexdigest()
 
                 # Add file links
                 file_links = []
@@ -230,7 +231,7 @@ class TcuPortal:
                     'title'     : detail_bs.find(attrs={'id': 'MainContent_Contents_lblTitle'     }).get_text(),
                     'body'      : detail_bs.find(attrs={'id': 'MainContent_Contents_lblBody'      }).get_text()
                 }
-                oshirase['id'] = hashlib.md5('tcu_portal_oshirase::{date}_{registrant}_{title}'.format(**oshirase).encode()).hexdigest()
+                oshirase['id'] = hashlib.md5('tcu_portal_oshirase::{date}_{registrant}_{title}::{user}'.format(**message, user=self.user).encode()).hexdigest()
 
                 # Add file links
                 file_links = []
@@ -318,6 +319,7 @@ class TcuPortal:
                     'title'     : detail_bs.find(attrs={'id': 'MainContent_Contents_lblTitle'     }).get_text(),
                     'body'      : detail_bs.find(attrs={'id': 'MainContent_Contents_lblBody'      }).get_text()
                 }
+                daredemo['id'] = hashlib.md5('tcu_portal_daredemo::{date}_{registrant}_{title}::{user}'.format(**daredemo, user=self.user).encode()).hexdigest()
 
                 # Add file links
                 file_links = []
