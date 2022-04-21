@@ -1,6 +1,8 @@
 # 神野研究室（TCU） 公式ポータルサイト
 
-仮の構成図：
+仮の構成図
+
+VueもAPIもnginxを経由します。
 
 ![](meta/bWYt3CEO52AOZ6sG-image-1650103552700.png)
 
