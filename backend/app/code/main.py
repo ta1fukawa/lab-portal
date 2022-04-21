@@ -18,13 +18,14 @@ db = mysql.connector.connect(
     host="db",
     user="root",
     passwd=db_root_passwd,
-    database="portal"
+    database="portal",
+    buffered=True,
 )
 
 def db_ping():
     try:
-        db.ping(reconnect=True)
-        # db.cursor().execute("SELECT user()").fetchone()
+        # db.ping(reconnect=True)
+        db.cursor().execute("SELECT user()").fetchone()
     except:
         pass
     finally:
@@ -187,46 +188,12 @@ def tcu_portal():
         until = datetime.strptime(request_data['until'][0], '%Y-%m-%d')
     else:
         until = datetime.datetime.now()
-    
+
     cursor = db.cursor(dictionary=True)
 
-    if 'with_update' in request_data and request_data['with_update'][0] == 'yes':
-        try:
-            cursor.execute("SELECT username, password FROM user_tcu_account WHERE user_id = %s", (flask.session['user_id'],))
-            account = cursor.fetchone()
-            if not account:
-                return flask.jsonify({'success': False, 'message': 'TCUアカウントが登録されていません。'})
-            tcu_portal = TcuPortal(account['username'], account['password'], flask.session['user_id'])
-
-            if 'message' in types:
-                message_list = tcu_portal.get_message_list(since=since, until=until)
-                for message in message_list:
-                    cursor.execute("SELECT id FROM tcu_portal_message WHERE id = %s", (message['id'],))
-                    if not cursor.fetchone():
-                        cursor.execute("INSERT INTO tcu_portal_message (id, user_id, date, sender, title, is_important, body) VALUES (%s, %s, %s, %s, %s, %s, %s)", (message['id'], flask.session['user_id'], message['date'], message['sender'], message['title'], message['important'], message['body']))
-                        db.commit()
-            if 'oshirase' in types:
-                oshirase_list = tcu_portal.get_oshirase_list(since=since, until=until)
-                for oshirase in oshirase_list:
-                    cursor.execute("SELECT id FROM tcu_portal_oshirase WHERE id = %s", (oshirase['id'],))
-                    if not cursor.fetchone():
-                        cursor.execute("INSERT INTO tcu_portal_oshirase (id, user_id, date, registrant, title, body) VALUES (%s, %s, %s, %s, %s, %s)", (oshirase['id'], flask.session['user_id'], oshirase['date'], oshirase['registrant'], oshirase['title'], oshirase['body']))
-                        db.commit()
-            if 'daredemo' in types:
-                daredemo_list = tcu_portal.get_daredemo_list(since=since, until=until)
-                for daredemo in daredemo_list:
-                    cursor.execute("SELECT id FROM tcu_portal_daredemo WHERE id = %s", (daredemo['id'],))
-                    if not cursor.fetchone():
-                        cursor.execute("INSERT INTO tcu_portal_daredemo (id, user_id, date, registrant, title, body) VALUES (%s, %s, %s, %s, %s, %s)", (daredemo['id'], flask.session['user_id'], daredemo['date'], daredemo['registrant'], daredemo['title'], daredemo['body']))
-                        db.commit()
-
-            tcu_portal.logout()
-        except Exception as e:
-            return flask.jsonify({'success': False, 'message': str(e)})
-    
     data = {}
     if 'message' in types:
-        cursor.execute("SELECT id, date, sender, title, is_important FROM tcu_portal_message WHERE user_id = %s AND date >= %s AND date <= %s", (flask.session['user_id'], since, until))
+        cursor.execute("SELECT id, date, sender, title, is_important, body FROM tcu_portal_message WHERE user_id = %s AND date >= %s AND date <= %s", (flask.session['user_id'], since, until))
         data['message'] = cursor.fetchall()
     if 'oshirase' in types:
         cursor.execute("SELECT id, date, registrant, title, body FROM tcu_portal_oshirase WHERE user_id = %s AND date >= %s AND date <= %s", (flask.session['user_id'], since, until))
@@ -236,6 +203,61 @@ def tcu_portal():
         data['daredemo'] = cursor.fetchall()
 
     return flask.jsonify({'success': True, 'data': data})
+
+@app.route('/tcu-portal-update', methods=['GET', 'POST'])
+def tcu_portal_update():
+    request_data = get_request_data(flask.request)
+
+    if 'type' not in request_data:
+        return flask.jsonify({'success': False, 'message': 'typeを指定してください。'})
+    types = request_data['type'][0].split(',')
+
+    if 'since' in request_data:
+        since = datetime.strptime(request_data['since'][0], '%Y-%m-%d')
+    else:
+        since = datetime.datetime.now() - dateutil.relativedelta.relativedelta(months=1)
+
+    if 'until' in request_data:
+        until = datetime.strptime(request_data['until'][0], '%Y-%m-%d')
+    else:
+        until = datetime.datetime.now()
+    
+    cursor = db.cursor(dictionary=True)
+
+    try:
+        cursor.execute("SELECT username, password FROM user_tcu_account WHERE user_id = %s", (flask.session['user_id'],))
+        account = cursor.fetchone()
+        if not account:
+            return flask.jsonify({'success': False, 'message': 'TCUアカウントが登録されていません。'})
+        tcu_portal = TcuPortal(account['username'], account['password'], flask.session['user_id'])
+
+        if 'message' in types:
+            message_list = tcu_portal.get_message_list(since=since, until=until)
+            for message in message_list:
+                cursor.execute("SELECT id FROM tcu_portal_message WHERE id = %s", (message['id'],))
+                if not cursor.fetchone():
+                    cursor.execute("INSERT INTO tcu_portal_message (id, user_id, date, sender, title, is_important, body) VALUES (%s, %s, %s, %s, %s, %s, %s)", (message['id'], flask.session['user_id'], message['date'], message['sender'], message['title'], message['important'], message['body']))
+                    db.commit()
+        if 'oshirase' in types:
+            oshirase_list = tcu_portal.get_oshirase_list(since=since, until=until)
+            for oshirase in oshirase_list:
+                cursor.execute("SELECT id FROM tcu_portal_oshirase WHERE id = %s", (oshirase['id'],))
+                if not cursor.fetchone():
+                    cursor.execute("INSERT INTO tcu_portal_oshirase (id, user_id, date, registrant, title, body) VALUES (%s, %s, %s, %s, %s, %s)", (oshirase['id'], flask.session['user_id'], oshirase['date'], oshirase['registrant'], oshirase['title'], oshirase['body']))
+                    db.commit()
+        if 'daredemo' in types:
+            daredemo_list = tcu_portal.get_daredemo_list(since=since, until=until)
+            for daredemo in daredemo_list:
+                cursor.execute("SELECT id FROM tcu_portal_daredemo WHERE id = %s", (daredemo['id'],))
+                if not cursor.fetchone():
+                    cursor.execute("INSERT INTO tcu_portal_daredemo (id, user_id, date, registrant, title, body) VALUES (%s, %s, %s, %s, %s, %s)", (daredemo['id'], flask.session['user_id'], daredemo['date'], daredemo['registrant'], daredemo['title'], daredemo['body']))
+                    db.commit()
+
+        tcu_portal.logout()
+    except Exception as e:
+        return flask.jsonify({'success': False, 'message': str(e)})
+
+    return flask.jsonify({'success': True, 'data': {}})
 
 @app.route('/lab-members', methods=['GET', 'POST'])
 def lab_members():
