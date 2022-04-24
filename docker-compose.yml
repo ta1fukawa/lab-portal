@@ -34,7 +34,6 @@ services:
             dockerfile: ./backend/db-manager/Dockerfile
         restart: always
         volumes:
-            - ./backend/db/data:/var/lib/mysql
             - ./backend/db-manager/sessions:/sessions
         secrets:
             - db_root_passwd
@@ -72,18 +71,10 @@ services:
         restart: always
         volumes:
             - ./frontend/vue:/vue
-        networks:
-            - caddynet
-            - default
-        labels:
-            caddy: w2-dev.kajitsu.dev
-            caddy.handle_path: /*
-            caddy.handle_path.0_reverse_proxy: "{{ upstreams 8080 }}"
-            caddy.tls: w2-dev@kajitsu.dev
 
 secrets:
     db_root_passwd:
-        file: ./backend/db/root_passwd
+        file: ./backend/db/.root_passwd
 
 networks:
     caddynet:
